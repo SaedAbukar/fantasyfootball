@@ -1,0 +1,421 @@
+openapi: 3.0.0
+info:
+  title: Job Scraping API
+  description: API endpoints for managing and scraping job postings from different platforms
+  version: 1.0.0
+servers:
+  - url: http://localhost:4000/api
+
+tags:
+  - name: Jobs
+    description: API endpoints for managing job postings
+  - name: Users
+    description: User management and authentication
+
+paths:
+  /jobs:
+    get:
+      tags: 
+        - Jobs
+      summary: Retrieve all job postings
+      responses:
+        '200':
+          description: A list of job postings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                    company:
+                      type: string
+                    location:
+                      type: string
+                    datePosted:
+                      type: string
+                    url:
+                      type: string
+                    description:
+                      type: string
+                    responsibilities:
+                      type: array
+                      items:
+                        type: string
+                    logo:
+                      type: string
+
+  /jobs/{id}:
+    get:
+      tags:
+        - Jobs
+      summary: Retrieve a job posting by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the job to retrieve
+      responses:
+        '200':
+          description: A job posting
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  company:
+                    type: string
+                  location:
+                    type: string
+                  datePosted:
+                    type: string
+                  url:
+                    type: string
+                  description:
+                    type: string
+                  responsibilities:
+                    type: array
+                    items:
+                      type: string
+                  logo:
+                    type: string
+        '404':
+          description: Job not found
+
+  /jobs/allsites/scrape-jobs:
+    post:
+      tags:
+        - Jobs
+      summary: Scrape job postings from all sites
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Jobs successfully scraped
+        '500':
+          description: Error while scraping jobs
+
+  /jobs/duunitori/scrape-jobs:
+    post:
+      tags:
+        - Jobs
+      summary: Scrape job postings from DuuniTori
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Jobs successfully scraped from DuuniTori
+        '500':
+          description: Error while scraping jobs from DuuniTori
+
+  /jobs/indeed/scrape-jobs:
+    post:
+      tags:
+        - Jobs
+      summary: Scrape job postings from Indeed
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Jobs successfully scraped from Indeed
+        '500':
+          description: Error while scraping jobs from Indeed
+
+  /jobs/jobly/scrape-jobs:
+    post:
+      tags:
+        - Jobs
+      summary: Scrape job postings from Jobly
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Jobs successfully scraped from Jobly
+        '500':
+          description: Error while scraping jobs from Jobly
+
+  /jobs/oikotie/scrape-jobs:
+    post:
+      tags:
+        - Jobs
+      summary: Scrape job postings from Oikotie
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Jobs successfully scraped from Oikotie
+        '500':
+          description: Error while scraping jobs from Oikotie
+
+  /jobs/tepalvelut/scrape-jobs:
+    post:
+      tags:
+        - Jobs
+      summary: Scrape job postings from TePalvelut
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Jobs successfully scraped from TePalvelut
+        '500':
+          description: Error while scraping jobs from TePalvelut
+
+  /jobs/{id}:
+    delete:
+      tags:
+        - Jobs
+      summary: Delete a job posting by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the job to delete
+      responses:
+        '200':
+          description: Job successfully deleted
+        '404':
+          description: Job not found
+
+  /users/register:
+    post:
+      summary: Register a new user
+      tags: [Users]
+      requestBody:
+        description: User registration details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfile"
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Invalid input or user already exists
+
+  /users/login:
+    post:
+      summary: Login a user
+      tags: [Users]
+      requestBody:
+        description: User login credentials
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  default: "lebron@gmail.com" # Default email
+                password:
+                  type: string
+                  default: "Helsinki1!" # Default password
+      responses:
+        '200':
+          description: User logged in successfully
+        '400':
+          description: Invalid credentials
+
+  /users/profile:
+    get:
+      summary: Get current user profile
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully
+        '401':
+          description: User not authenticated
+
+    patch:
+      summary: Update current user profile
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Fields to update in the user profile
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfile"
+            example:
+              firstname: "Steph" # Default first name for update
+              lastname: "Curry" # Default last name for update
+              email: "steph@gmail.com" # Default email for update
+      responses:
+        '200':
+          description: User profile updated successfully
+        '400':
+          description: Invalid input
+        '401':
+          description: User not authenticated
+
+    delete:
+      summary: Delete current user account
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: User account deleted successfully
+        '401':
+          description: User not authenticated
+
+  /users/favourites:
+    patch:
+      summary: Add a job to user's favourites
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Job to add to favourites
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FavouriteJob"
+      responses:
+        '200':
+          description: Job added to favourites
+        '400':
+          description: Invalid input or job already in favourites
+        '401':
+          description: User not authenticated
+
+    delete:
+      summary: Remove a job from user's favourites
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Job to remove from favourites
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FavouriteJob"
+      responses:
+        '200':
+          description: Job removed from favourites
+        '400':
+          description: Invalid input
+        '401':
+          description: User not authenticated
+
+    get:
+      summary: Fetch all saved jobs (favourites) for the authenticated user
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of results per page
+      responses:
+        '200':
+          description: Favourites retrieved successfully
+        '401':
+          description: User not authenticated
+
+  /userData:
+    post:
+      summary: Update user data
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: User data to update
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserData"
+            example:
+              name: "Steve Jobs"
+              skills: ["Leadership", "Innovation"]
+              education: "Bachelor's Degree"
+              experience: "10 years in tech industry"
+      responses:
+        '200':
+          description: User data updated successfully
+        '401':
+          description: User not authenticated
+        '404':
+          description: User not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # Schema for the user profile
+    UserProfile:
+      type: object
+      required:
+        - firstname
+        - lastname
+        - email
+        - password
+      properties:
+        firstname:
+          type: string
+          default: "Lebron" # Default value
+        lastname:
+          type: string
+          default: "James" # Default value
+        email:
+          type: string
+          default: "lebron@gmail.com" # Default value
+        password:
+          type: string
+          default: "Helsinki1!" # Default value
+
+    # Schema for job favourites
+    FavouriteJob:
+      type: object
+      required:
+        - jobPostId
+      properties:
+        jobPostId:
+          type: string
+          default: "652004d78a77aa8c431e84d1" # Default value for job post ID
+
+    # Schema for updating user data
+    UserData:
+      type: object
+      properties:
+        name:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        education:
+          type: string
+        experience:
+          type: string
