@@ -7,6 +7,11 @@ const router = express.Router();
 router.get("/", playerController.getAllPlayers);
 router.get("/:id", playerController.getPlayerById);
 router.get("/search/keys", playerController.findPlayers);
+router.post("/player/updateddata", playerController.getUpdatedPlayerData);
+router.post(
+  "/player/upinitialdata",
+  playerController.getInitialFutsalPlayerData
+);
 router.post("/", playerController.createPlayer); // Add this line for creating a player
 router.patch("/:id", playerController.updatePlayer); // Add this line for updating a player
 router.delete("/:id", playerController.deletePlayer);

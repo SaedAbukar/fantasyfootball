@@ -1,5 +1,7 @@
 // controllers/playerController.js
 const Player = require("../models/Player");
+const PlayerData = require("../services/scrapers/playerStats");
+const { scrapePlayerData } = require("../services/scrapers/futsalPlayerStats");
 const mongoose = require("mongoose");
 
 // Get all players with optional search and pagination
@@ -165,5 +167,38 @@ exports.deletePlayer = async (req, res) => {
     res
       .status(500)
       .json({ message: "Failed to delete player", error: err.message });
+  }
+};
+
+exports.getUpdatedPlayerData = async (req, res) => {
+  try {
+    const result = await scrapePlayerData();
+    // console.log("result: ", result);
+    if (result) {
+      res.status(200).json(result);
+    } else {
+      res.status(200).json({ message: "Error fetching the data. Try again" });
+    }
+  } catch (err) {
+    res.status(500).json({
+      message: "Failed to retrieve the latest data",
+      err: err.message,
+    });
+  }
+};
+exports.getInitialFutsalPlayerData = async (req, res) => {
+  try {
+    const result = await PlayerData();
+    // console.log("result: ", result);
+    if (result) {
+      res.status(200).json(result);
+    } else {
+      res.status(200).json({ message: "Error fetching the data. Try again" });
+    }
+  } catch (err) {
+    res.status(500).json({
+      message: "Failed to retrieve the latest data",
+      err: err.message,
+    });
   }
 };

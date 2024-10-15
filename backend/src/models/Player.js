@@ -10,11 +10,11 @@ const playerSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    position: {
-      type: String,
-      enum: ["Goalkeeper", "Defender", "Midfielder", "Forward"],
-      required: true,
-    },
+    // position: {
+    //   type: String,
+    //   enum: ["Goalkeeper", "Defender", "Midfielder", "Forward"],
+    //   required: true,
+    // },
     price: {
       type: Number,
       required: true,
@@ -33,6 +33,10 @@ const playerSchema = new mongoose.Schema(
       default: 0,
     },
     transfersOut: {
+      type: Number,
+      default: 0,
+    },
+    matches: {
       type: Number,
       default: 0,
     },
