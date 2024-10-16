@@ -159,6 +159,8 @@ async function scrapeGoalsData(url) {
     // Accept cookie consent
     await cookieAccepter(page);
 
+    await page.waitForSelector("tbody tr", { visible: true });
+
     // Scrape the data from the table
     const scrapedData = await page.evaluate(() => {
       const rows = document.querySelectorAll("tbody tr");
@@ -211,6 +213,8 @@ async function scrapeCardsData(url) {
 
     // Accept cookie consent
     await cookieAccepter(page);
+
+    await page.waitForSelector("tbody tr", { visible: true });
 
     // Scrape the data from the table
     const scrapedData = await page.evaluate(() => {

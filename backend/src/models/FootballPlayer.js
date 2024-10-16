@@ -27,6 +27,10 @@ const playerSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    currenWeekPoints: {
+      type: Number,
+      default: 0,
+    },
     selectedByPercent: {
       type: Number,
       default: 0,

@@ -178,36 +178,96 @@ exports.deleteFutsalPlayer = async (req, res) => {
 
 exports.getUpdatedFutsalPlayerData = async (req, res) => {
   try {
-    const result = await mergePlayerData();
-    if (result && result.length > 0) {
-      try {
-        const updatePromises = result.map(async (player) => {
-          // Use a combination of 'name' and 'team' to identify the player
-          return FutsalPlayer.updateOne(
-            { name: player.name, team: player.team }, // Filter by name and team
-            { $set: player }, // Update the fields with the new data
-            { upsert: true } // Create a new document if no match is found
-          );
-        });
+    // Step 1: Scrape the latest player data
+    const scrapedData = await mergePlayerData();
 
-        // Wait for all the updates to complete
-        await Promise.all(updatePromises);
+    // Step 2: Update each player's currentWeekPoints and totalPoints based on the scraped data
+    const updatePromises = scrapedData.map(async (scrapedPlayer) => {
+      const {
+        name,
+        team,
+        matches,
+        goals,
+        assists,
+        points,
+        yellowCards,
+        redCards,
+      } = scrapedPlayer;
 
-        res.status(200).json({ message: "Data updated/inserted successfully" });
-      } catch (err) {
-        res.status(500).json({
-          message: "Failed to update or insert the data",
-          error: err.message,
-        });
+      // Fetch the existing player data from the database by name and team
+      const existingPlayer = await FutsalPlayer.findOne({ name, team });
+
+      if (!existingPlayer) {
+        console.warn(
+          `Player with name "${name}" and team "${team}" not found in the database.`
+        );
+        return; // Skip if the player doesn't exist
       }
-    } else {
-      res.status(400).json({ message: "Error fetching the data. Try again" });
-    }
-  } catch (err) {
-    res.status(500).json({
-      message: "Failed to retrieve the latest data",
-      error: err.message,
+
+      // Ensure all scraped values are parsed as integers
+      const parsedGoals = parseInt(goals) || 0;
+      const parsedAssists = parseInt(assists) || 0;
+      const parsedPoints = parseInt(points) || 0;
+      const parsedYellowCards = parseInt(yellowCards) || 0;
+      const parsedRedCards = parseInt(redCards) || 0;
+      const parsedMatches = parseInt(matches) || 0;
+
+      // Step 3: Calculate differences
+      const goalsDifference = parsedGoals - existingPlayer.goals;
+      const assistsDifference = parsedAssists - existingPlayer.assist;
+      const pointsDifference = parsedPoints - existingPlayer.points;
+      const yellowCardsDifference =
+        parsedYellowCards - existingPlayer.yellowCards;
+      const redCardsDifference = parsedRedCards - existingPlayer.redCards;
+      const matchesDifference = parsedMatches - existingPlayer.matches;
+
+      // Step 4: Calculate currentWeekPoints based on the differences
+      const currentWeekPoints =
+        pointsDifference * 1 + // 1 point per point
+        goalsDifference * 4 + // 4 points per goal
+        assistsDifference * 3 + // 3 points per assist
+        matchesDifference * 1 + // 1 point for each match played
+        yellowCardsDifference * -1 + // -1 point deduction for each yellow card
+        redCardsDifference * -3; // -3 points deduction for each red card
+
+      // Step 5: Update the totalPoints with the latest statistics
+      const newTotalPoints =
+        existingPlayer.totalPoints +
+        goalsDifference * 4 + // Update total points based on new goals
+        assistsDifference * 3 + // Update total points based on new assists
+        matchesDifference * 1 + // Update total points based on new matches
+        yellowCardsDifference * -1 + // Update total points based on yellow cards
+        redCardsDifference * -3; // Update total points based on red cards
+
+      // Step 6: Update the player with new currentWeekPoints and totalPoints
+      await FutsalPlayer.findOneAndUpdate(
+        { name, team },
+        {
+          goals: parsedGoals,
+          assist: parsedAssists,
+          points: parsedPoints,
+          yellowCards: parsedYellowCards,
+          redCards: parsedRedCards,
+          matches: parsedMatches,
+          currentWeekPoints: currentWeekPoints, // Update with calculated points
+          totalPoints: newTotalPoints, // Update totalPoints
+        },
+        { new: true, runValidators: true }
+      );
+
+      console.log(
+        `Updated points for player ${name} of team ${team}: currentWeekPoints: ${currentWeekPoints}, totalPoints: ${newTotalPoints}`
+      );
     });
+
+    // Execute all updates in parallel
+    await Promise.all(updatePromises);
+    res.status(200).json({ message: "Players' points updated successfully." });
+  } catch (err) {
+    console.error("Error updating player points:", err.message);
+    res
+      .status(500)
+      .json({ message: "Error updating player points", error: err.message });
   }
 };
 

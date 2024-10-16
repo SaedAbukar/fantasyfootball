@@ -7,7 +7,7 @@ const router = express.Router();
 router.get("/", footballPlayerController.getAllFootballPlayers);
 router.get("/:id", footballPlayerController.getFootballPlayerById);
 router.get("/search/keys", footballPlayerController.findFootballPlayers);
-router.post(
+router.patch(
   "/player/updateddata",
   footballPlayerController.getUpdatedFootballPlayerData
 );
