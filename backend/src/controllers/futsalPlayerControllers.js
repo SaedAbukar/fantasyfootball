@@ -179,32 +179,59 @@ exports.deleteFutsalPlayer = async (req, res) => {
 exports.getUpdatedFutsalPlayerData = async (req, res) => {
   try {
     const result = await mergePlayerData();
-    // console.log("result: ", result);
-    if (result) {
-      res.status(200).json(result);
+    if (result && result.length > 0) {
+      try {
+        const updatePromises = result.map(async (player) => {
+          // Use a combination of 'name' and 'team' to identify the player
+          return FutsalPlayer.updateOne(
+            { name: player.name, team: player.team }, // Filter by name and team
+            { $set: player }, // Update the fields with the new data
+            { upsert: true } // Create a new document if no match is found
+          );
+        });
+
+        // Wait for all the updates to complete
+        await Promise.all(updatePromises);
+
+        res.status(200).json({ message: "Data updated/inserted successfully" });
+      } catch (err) {
+        res.status(500).json({
+          message: "Failed to update or insert the data",
+          error: err.message,
+        });
+      }
     } else {
-      res.status(200).json({ message: "Error fetching the data. Try again" });
+      res.status(400).json({ message: "Error fetching the data. Try again" });
     }
   } catch (err) {
     res.status(500).json({
       message: "Failed to retrieve the latest data",
-      err: err.message,
+      error: err.message,
     });
   }
 };
+
 exports.getInitialFutsalPlayerData = async (req, res) => {
   try {
     const result = await scrapePlayerData();
-    // console.log("result: ", result);
-    if (result) {
-      res.status(200).json(result);
+    if (result && result.length > 0) {
+      try {
+        const futsalPlayers = await FutsalPlayer.insertMany(result);
+        res
+          .status(200)
+          .json({ message: "Data inserted successfully", data: futsalPlayers });
+      } catch (err) {
+        res
+          .status(500)
+          .json({ message: "Failed to insert the data", error: err.message });
+      }
     } else {
-      res.status(200).json({ message: "Error fetching the data. Try again" });
+      res.status(400).json({ message: "Error fetching the data. Try again" });
     }
   } catch (err) {
     res.status(500).json({
       message: "Failed to retrieve the latest data",
-      err: err.message,
+      error: err.message,
     });
   }
 };

@@ -298,30 +298,40 @@ async function scrapePlayerData() {
         linkChunks.push(links.slice(i, i + maxConcurrency));
       }
 
+      const allPlayers = []; // Array to accumulate all player data
+
       for (const chunk of linkChunks) {
         // Process each chunk in parallel
-        await Promise.all(
+        const chunkResults = await Promise.all(
           chunk.map(async (link) => {
             // Make sure link.link is defined and not empty
             if (link.link) {
               console.log("Scraping link:", link.link);
               const data = await scrapeInitialData(link.link); // Call the correct function
               if (data) {
+                // Map the player data and add the team name
                 const players = data.map((player) => ({
                   ...player,
                   team: link.name,
                 }));
-                console.log(players);
+                return players;
               }
             } else {
               console.warn("Link is not defined for:", link);
             }
+            return []; // Return an empty array if no data is found
           })
         );
+
+        // Flatten the results from the current chunk and add to allPlayers
+        allPlayers.push(...chunkResults.flat());
       }
+
+      return allPlayers; // Return the accumulated player data
     }
   } catch (error) {
     console.log(error);
+    return []; // Return an empty array in case of an error
   }
 }
 

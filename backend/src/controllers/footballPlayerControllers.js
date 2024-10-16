@@ -181,32 +181,63 @@ exports.deleteFootballPlayer = async (req, res) => {
 exports.getUpdatedFootballPlayerData = async (req, res) => {
   try {
     const result = await mergePlayerData();
-    // console.log("result: ", result);
-    if (result) {
-      res.status(200).json(result);
+    if (result && result.length > 0) {
+      try {
+        // Iterate over each player in the merged data
+        const updatePromises = result.map(async (player) => {
+          // Use a combination of 'name' and 'team' to identify the player
+          return FootballPlayer.updateOne(
+            { name: player.name, team: player.team }, // Filter by name and team
+            { $set: player }, // Update the fields with the new data
+            { upsert: true } // Create a new document if no match is found
+          );
+        });
+
+        // Wait for all the updates to complete
+        await Promise.all(updatePromises);
+
+        res.status(200).json({ message: "Data updated/inserted successfully" });
+      } catch (err) {
+        res.status(500).json({
+          message: "Failed to update or insert the data",
+          error: err.message,
+        });
+      }
     } else {
-      res.status(200).json({ message: "Error fetching the data. Try again" });
+      res.status(400).json({ message: "Error fetching the data. Try again" });
     }
   } catch (err) {
     res.status(500).json({
       message: "Failed to retrieve the latest data",
-      err: err.message,
+      error: err.message,
     });
   }
 };
+
 exports.getInitialFootballPlayerData = async (req, res) => {
   try {
-    const result = await scrapePlayerData();
-    // console.log("result: ", result);
-    if (result) {
-      res.status(200).json(result);
+    const result = await scrapePlayerData(); // Scrape player data
+    if (result && result.length > 0) {
+      // Check if result is valid and not empty
+      try {
+        const footballPlayers = await FootballPlayer.insertMany(result); // Insert data into the database
+        res.status(200).json({
+          message: "Data inserted successfully",
+          data: footballPlayers,
+        });
+      } catch (err) {
+        res.status(500).json({
+          message: "Failed to insert the data",
+          error: err.message,
+        });
+      }
     } else {
-      res.status(200).json({ message: "Error fetching the data. Try again" });
+      res.status(400).json({ message: "Error fetching the data. Try again" });
     }
   } catch (err) {
     res.status(500).json({
       message: "Failed to retrieve the latest data",
-      err: err.message,
+      error: err.message,
     });
   }
 };
