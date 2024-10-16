@@ -231,12 +231,11 @@ exports.getUpdatedFootballPlayerData = async (req, res) => {
 
       // Step 5: Update the totalPoints with the latest statistics
       const newTotalPoints =
-        existingPlayer.totalPoints +
-        goalsDifference * 4 + // Update total points based on new goals
-        matchesDifference * 1 + // 1 point for each match played
-        Math.floor((minutesDifference / 60) * 3.5) + // Update total points based on new minutes
-        yellowCardsDifference * -1 + // Update total points based on yellow cards
-        redCardsDifference * -3; // Update total points based on red cards
+        parsedGoals * 4 +
+        parsedMatches * 1 +
+        Math.floor((parsedMinutesPlayed / 60) * 3.5) +
+        parsedYellowCards * -1 +
+        parsedRedCards * -3;
 
       // // Debugging logs
       // console.log(`Updating player: ${name}, Team: ${team}`);

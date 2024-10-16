@@ -232,12 +232,12 @@ exports.getUpdatedFutsalPlayerData = async (req, res) => {
 
       // Step 5: Update the totalPoints with the latest statistics
       const newTotalPoints =
-        existingPlayer.totalPoints +
-        goalsDifference * 4 + // Update total points based on new goals
-        assistsDifference * 3 + // Update total points based on new assists
-        matchesDifference * 1 + // Update total points based on new matches
-        yellowCardsDifference * -1 + // Update total points based on yellow cards
-        redCardsDifference * -3; // Update total points based on red cards
+        parsedGoals * 4 +
+        parsedAssists * 3 +
+        parsedPoints * 1 +
+        parsedMatches * 1 +
+        parsedYellowCards * -1 +
+        parsedRedCards * -3;
 
       // Step 6: Update the player with new currentWeekPoints and totalPoints
       await FutsalPlayer.findOneAndUpdate(
