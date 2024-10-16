@@ -19,7 +19,9 @@ const playerSchema = new mongoose.Schema(
       type: Number,
       // required: true,
       min: 0,
-      default: 0,
+      default:
+        (Math.floor(Math.random() * 4) + 6) * 1000000 +
+        Math.floor(Math.random() * 2) * 500000,
     },
     totalPoints: {
       type: Number,

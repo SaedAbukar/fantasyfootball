@@ -288,6 +288,14 @@ async function scrapePlayerData() {
   const url =
     "https://tulospalvelu.palloliitto.fi/category/FM3!etefs2425/tables";
   const maxConcurrency = 5; // Maximum number of concurrent browser instances
+
+  const createRandomPrice = () => {
+    return (
+      (Math.floor(Math.random() * 4) + 6) * 1000000 +
+      Math.floor(Math.random() * 2) * 500000
+    );
+  };
+
   try {
     const links = await scrapeTeamUrls(url);
     if (links) {
@@ -313,6 +321,7 @@ async function scrapePlayerData() {
                 const players = data.map((player) => ({
                   ...player,
                   team: link.name,
+                  price: createRandomPrice(),
                 }));
                 return players;
               }

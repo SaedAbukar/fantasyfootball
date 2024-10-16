@@ -1,3 +1,5 @@
+const FutsalPlayer = require("./models/FutsalPlayer"); // Import the FutsalPlayer model
+
 const calculateTotalPoints = (player) => {
   let totalPoints = 0;
 
@@ -5,14 +7,19 @@ const calculateTotalPoints = (player) => {
   if (typeof player.goals === "number") {
     totalPoints += player.goals * 4; // Assuming 4 points for each goal
   }
-  if (typeof player.assists === "number") {
-    totalPoints += player.assists * 3; // Assuming 3 points for each assist
+  if (typeof player.assist === "number") {
+    // Note: Changed to 'assist' based on your schema
+    totalPoints += player.assist * 3; // Assuming 3 points for each assist
   }
-  if (typeof player.minutesPlayed === "number") {
-    totalPoints += Math.floor(player.minutesPlayed / 90); // 1 point for each full match played
+  if (typeof player.matches === "number") {
+    // Changed from minutesPlayed to matches
+    totalPoints += player.matches; // 1 point for each match played
   }
 
   // Add any other criteria you want to consider
+  if (typeof player.cleanSheets === "number") {
+    totalPoints += player.cleanSheets * 2; // Assuming 2 points for each clean sheet
+  }
 
   return totalPoints;
 };

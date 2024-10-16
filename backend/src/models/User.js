@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema(
     money: {
       type: Number,
       required: true,
-      default: 100, // Default value set to 100 million
+      default: 100000000, // Default value set to 100 million
     },
     team: [
       {
