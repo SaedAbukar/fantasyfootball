@@ -1,4 +1,6 @@
 const User = require("../models/User");
+const Player = require("../models/FutsalPlayer");
+const FootballPlayer = require("../models/FootballPlayer");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 
@@ -24,14 +26,14 @@ exports.getUserById = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const { _id, firstname, lastname, email, profileImage, team, role } = user;
+    const { _id, firstname, lastname, email, money, team, role } = user;
 
     res.status(200).json({
       id: _id,
       firstname,
       lastname,
       email,
-      profileImage, // Add profileImage to response
+      money,
       team,
       role,
     });
@@ -176,8 +178,10 @@ exports.addToTeam = async (req, res) => {
     // Add player to the team and deduct the price from the user's money
     user.team.push(playerId);
     user.money -= player.price;
+    player.transfersIn++;
 
     await user.save();
+    await player.save();
 
     res.status(200).json({
       message: "Player added successfully",
@@ -223,8 +227,10 @@ exports.removeFromTeam = async (req, res) => {
     // Remove the player from the team and refund the price to the user's money
     user.team.splice(playerIndex, 1);
     user.money += player.price;
+    player.transfersOut++;
 
     await user.save();
+    await player.save();
 
     res.status(200).json({
       message: "Player removed successfully",
@@ -256,7 +262,7 @@ exports.getUserWithTeam = async (req, res) => {
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    res.status(200).json(user);
+    res.status(200).json(user.team);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
