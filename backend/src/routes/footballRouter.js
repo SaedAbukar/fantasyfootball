@@ -12,7 +12,7 @@ router.post(
   footballPlayerController.getUpdatedFootballPlayerData
 );
 router.post(
-  "/player/upinitialdata",
+  "/player/initialdata",
   footballPlayerController.getInitialFootballPlayerData
 );
 router.post("/", footballPlayerController.createFootballPlayer); // Add this line for creating a footballPlayer

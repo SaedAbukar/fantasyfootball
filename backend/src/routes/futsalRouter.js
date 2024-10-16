@@ -8,11 +8,11 @@ router.get("/", futsalPlayerController.getAllFutsalPlayers);
 router.get("/:id", futsalPlayerController.getFutsalPlayerById);
 router.get("/search/keys", futsalPlayerController.findFutsalPlayers);
 router.post(
-  "/futsalPlayer/updateddata",
+  "/player/updateddata",
   futsalPlayerController.getUpdatedFutsalPlayerData
 );
 router.post(
-  "/futsalPlayer/upinitialdata",
+  "/player/initialdata",
   futsalPlayerController.getInitialFutsalPlayerData
 );
 router.post("/", futsalPlayerController.createFutsalPlayer); // Add this line for creating a futsalPlayer

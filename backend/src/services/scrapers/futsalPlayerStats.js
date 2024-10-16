@@ -287,7 +287,7 @@ async function mergePlayerData() {
 async function scrapePlayerData() {
   const url =
     "https://tulospalvelu.palloliitto.fi/category/FM3!etefs2425/tables";
-  const maxConcurrency = 2; // Maximum number of concurrent browser instances
+  const maxConcurrency = 5; // Maximum number of concurrent browser instances
   try {
     const links = await scrapeTeamUrls(url);
     if (links) {
