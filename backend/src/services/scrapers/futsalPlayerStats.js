@@ -173,7 +173,7 @@ async function scrapeGoalsData(url) {
         const team = columns[1].innerText.trim();
         const matches = columns[2].innerText.trim();
         const goals = columns[3].innerText.trim();
-        const minutesPlayed = columns[4].innerText.trim();
+        const points = columns[4].innerText.trim();
 
         // Push the extracted data to the data array
         data.push({
@@ -181,7 +181,7 @@ async function scrapeGoalsData(url) {
           team,
           matches,
           goals,
-          minutesPlayed,
+          points,
         });
       });
 
@@ -252,9 +252,9 @@ async function scrapeCardsData(url) {
 
 async function mergePlayerData() {
   const goalsURL =
-    "https://tulospalvelu.palloliitto.fi/category/M3!etejp24/statistics/points";
+    "https://tulospalvelu.palloliitto.fi/category/FM3!etefs2425/statistics/points";
   const cardsURL =
-    "https://tulospalvelu.palloliitto.fi/category/M3!etejp24/statistics/cards/playercards";
+    "https://tulospalvelu.palloliitto.fi/category/FM3!etefs2425/statistics/cards/playercards";
 
   // Await the results of both scraping functions
   const goalsStats = await scrapeGoalsData(goalsURL);
@@ -280,17 +280,10 @@ async function mergePlayerData() {
   });
 
   // // Log the merged data
-  // console.log(players);
+  console.log(players);
   return players;
 }
 
-// // Run the merge function
-// mergePlayerData();
-
-// scrapeTeamUrls(
-//   "https://tulospalvelu.palloliitto.fi/category/FM3!etefs2425/tables"
-// );
-// scrapeInitialData("https://tulospalvelu.palloliitto.fi/team/35132965/players");
 async function scrapePlayerData() {
   const url =
     "https://tulospalvelu.palloliitto.fi/category/FM3!etefs2425/tables";
@@ -331,6 +324,14 @@ async function scrapePlayerData() {
     console.log(error);
   }
 }
+
+// Run the merge function
+// mergePlayerData();
+
+// scrapeTeamUrls(
+//   "https://tulospalvelu.palloliitto.fi/category/FM3!etefs2425/statistics/points"
+// );
+// scrapeInitialData("https://tulospalvelu.palloliitto.fi/category/FM3!etefs2425/statistics/cards/playercards");
 
 // Run the scrapePlayerData function
 // scrapePlayerData();

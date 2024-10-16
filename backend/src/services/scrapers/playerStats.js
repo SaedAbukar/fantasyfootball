@@ -160,7 +160,47 @@ async function mergePlayerData() {
   return players;
 }
 
+async function scrapePlayerData() {
+  const url = "https://tulospalvelu.palloliitto.fi/category/M3!etejp24/tables";
+  const maxConcurrency = 2; // Maximum number of concurrent browser instances
+  try {
+    const links = await scrapeTeamUrls(url);
+    if (links) {
+      const linkChunks = []; // Array to hold chunks of links
+
+      // Split links into chunks of size maxConcurrency
+      for (let i = 0; i < links.length; i += maxConcurrency) {
+        linkChunks.push(links.slice(i, i + maxConcurrency));
+      }
+
+      for (const chunk of linkChunks) {
+        // Process each chunk in parallel
+        await Promise.all(
+          chunk.map(async (link) => {
+            // Make sure link.link is defined and not empty
+            if (link.link) {
+              console.log("Scraping link:", link.link);
+              const data = await scrapeInitialData(link.link); // Call the correct function
+              if (data) {
+                const players = data.map((player) => ({
+                  ...player,
+                  team: link.name,
+                }));
+                console.log(players);
+              }
+            } else {
+              console.warn("Link is not defined for:", link);
+            }
+          })
+        );
+      }
+    }
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 // // Run the merge function
 // mergePlayerData();
 
-module.exports = mergePlayerData;
+module.exports = { mergePlayerData, scrapePlayerData };

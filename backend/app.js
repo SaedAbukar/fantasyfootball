@@ -9,6 +9,7 @@ const cors = require("cors");
 const adminRoutes = require("./src/routes/adminRouter");
 const userRoutes = require("./src/routes/userRouter");
 const playerRoutes = require("./src/routes/playerRouter");
+const futsalRoutes = require("./src/routes/futsalRouter");
 const {
   requestLogger,
   unknownEndpoint,
@@ -48,7 +49,8 @@ connectDB();
 // Routers
 app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/players", playerRoutes);
+app.use("/api/football", playerRoutes);
+app.use("/api/futsal", futsalRoutes);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Example route that throws an error
