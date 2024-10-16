@@ -1,16 +1,16 @@
-// controllers/playerController.js
-const Player = require("../models/Player");
+// controllers/footballPlayerController.js
+const FootballPlayer = require("../models/FootballPlayer");
 const {
   mergePlayerData,
   scrapePlayerData,
-} = require("../services/scrapers/playerStats");
+} = require("../services/scrapers/footballPlayerStats");
 const mongoose = require("mongoose");
 
-// Get all players with optional search and pagination
-exports.getAllPlayers = async (req, res) => {
+// Get all footballPlayers with optional search and pagination
+exports.getAllFootballPlayers = async (req, res) => {
   try {
     const { page = 1, limit = 10, name } = req.query; // Use default page 1 and limit 10 if not provided
-    const skip = (page - 1) * limit; // Calculate how many players to skip
+    const skip = (page - 1) * limit; // Calculate how many footballPlayers to skip
 
     // Build the filter object for MongoDB query
     const filter = {};
@@ -18,18 +18,18 @@ exports.getAllPlayers = async (req, res) => {
     console.log(filter);
 
     // Execute the query with filtering, pagination, and limit
-    const players = await Player.find(filter)
+    const footballPlayers = await FootballPlayer.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
 
-    const totalPlayers = await Player.countDocuments(filter); // Get total number of players that match the filter
+    const totalFootballPlayers = await FootballPlayer.countDocuments(filter); // Get total number of footballPlayers that match the filter
 
-    // Return the players along with pagination info
+    // Return the footballPlayers along with pagination info
     res.status(200).json({
-      players,
-      totalPlayers, // Send the total number of players for frontend to calculate total pages
-      totalPages: Math.ceil(totalPlayers / limit), // Calculate total pages
+      footballPlayers,
+      totalFootballPlayers, // Send the total number of footballPlayers for frontend to calculate total pages
+      totalPages: Math.ceil(totalFootballPlayers / limit), // Calculate total pages
       currentPage: parseInt(page), // Send current page info
     });
   } catch (err) {
@@ -37,28 +37,28 @@ exports.getAllPlayers = async (req, res) => {
   }
 };
 
-// Get a single player by ID
-exports.getPlayerById = async (req, res) => {
+// Get a single footballPlayer by ID
+exports.getFootballPlayerById = async (req, res) => {
   const { id } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ message: "Invalid player ID" });
+    return res.status(400).json({ message: "Invalid footballPlayer ID" });
   }
 
   try {
-    const player = await Player.findById(id);
-    if (player) {
-      res.status(200).json(player);
+    const footballPlayer = await FootballPlayer.findById(id);
+    if (footballPlayer) {
+      res.status(200).json(footballPlayer);
     } else {
-      res.status(404).json({ message: "Player not found" });
+      res.status(404).json({ message: "FootballPlayer not found" });
     }
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// Find players by query
-exports.findPlayers = async (req, res) => {
+// Find footballPlayers by query
+exports.findFootballPlayers = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
@@ -86,93 +86,99 @@ exports.findPlayers = async (req, res) => {
 
     // Check if a price limit is provided and add to query
     if (price && !isNaN(price)) {
-      query.price = { $lt: parseFloat(price) }; // Filter players with price less than the specified price
+      query.price = { $lt: parseFloat(price) }; // Filter footballPlayers with price less than the specified price
     }
 
-    const players = await Player.find(query)
+    const footballPlayers = await FootballPlayer.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    const total = await Player.countDocuments(query); // Count based on search query
+    const total = await FootballPlayer.countDocuments(query); // Count based on search query
 
-    if (players.length === 0) {
+    if (footballPlayers.length === 0) {
       return res
         .status(404)
-        .json({ message: "No players found matching the criteria" });
+        .json({ message: "No footballPlayers found matching the criteria" });
     }
 
     res.status(200).json({
-      players,
+      footballPlayers,
       total,
       page,
       totalPages: Math.ceil(total / limit),
     });
   } catch (err) {
-    console.error("Error fetching players:", err);
+    console.error("Error fetching footballPlayers:", err);
     res.status(500).json({ message: err.message });
   }
 };
 
-// Create a new player
-exports.createPlayer = async (req, res) => {
-  const newPlayer = new Player(req.body);
+// Create a new footballPlayer
+exports.createFootballPlayer = async (req, res) => {
+  const newFootballPlayer = new FootballPlayer(req.body);
 
   try {
-    const savedPlayer = await newPlayer.save();
-    res.status(201).json(savedPlayer);
+    const savedFootballPlayer = await newFootballPlayer.save();
+    res.status(201).json(savedFootballPlayer);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
 
-// Update player data by ID
-exports.updatePlayer = async (req, res) => {
+// Update footballPlayer data by ID
+exports.updateFootballPlayer = async (req, res) => {
   const { id } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ message: "Invalid player ID" });
+    return res.status(400).json({ message: "Invalid footballPlayer ID" });
   }
 
   try {
-    const updatedPlayer = await Player.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true, // Enforce schema validation on update
-    });
+    const updatedFootballPlayer = await FootballPlayer.findByIdAndUpdate(
+      id,
+      req.body,
+      {
+        new: true,
+        runValidators: true, // Enforce schema validation on update
+      }
+    );
 
-    if (!updatedPlayer) {
-      return res.status(404).json({ message: "Player not found" });
+    if (!updatedFootballPlayer) {
+      return res.status(404).json({ message: "FootballPlayer not found" });
     }
 
-    res.status(200).json(updatedPlayer);
+    res.status(200).json(updatedFootballPlayer);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
 
-// Delete a player by ID
-exports.deletePlayer = async (req, res) => {
+// Delete a footballPlayer by ID
+exports.deleteFootballPlayer = async (req, res) => {
   const { id } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ message: "Invalid player ID" });
+    return res.status(400).json({ message: "Invalid footballPlayer ID" });
   }
 
   try {
-    const playerDeleted = await Player.findOneAndDelete({ _id: id });
-    if (playerDeleted) {
-      res.status(204).json({ message: "Player deleted successfully" });
+    const footballPlayerDeleted = await FootballPlayer.findOneAndDelete({
+      _id: id,
+    });
+    if (footballPlayerDeleted) {
+      res.status(204).json({ message: "FootballPlayer deleted successfully" });
     } else {
-      res.status(404).json({ message: "Player not found" });
+      res.status(404).json({ message: "FootballPlayer not found" });
     }
   } catch (err) {
     res
       .status(500)
-      .json({ message: "Failed to delete player", error: err.message });
+      .json({ message: "Failed to delete footballPlayer", error: err.message });
   }
 };
 
-exports.getUpdatedPlayerData = async (req, res) => {
+exports.getUpdatedFootballPlayerData = async (req, res) => {
   try {
     const result = await mergePlayerData();
     // console.log("result: ", result);
@@ -188,7 +194,7 @@ exports.getUpdatedPlayerData = async (req, res) => {
     });
   }
 };
-exports.getInitialPlayerData = async (req, res) => {
+exports.getInitialFootballPlayerData = async (req, res) => {
   try {
     const result = await scrapePlayerData();
     // console.log("result: ", result);

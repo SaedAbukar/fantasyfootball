@@ -8,7 +8,7 @@ const cors = require("cors");
 // const authRoutes = require("./src/routes/authRouter");
 const adminRoutes = require("./src/routes/adminRouter");
 const userRoutes = require("./src/routes/userRouter");
-const playerRoutes = require("./src/routes/playerRouter");
+const playerRoutes = require("./src/routes/footballRouter");
 const futsalRoutes = require("./src/routes/futsalRouter");
 const {
   requestLogger,
