@@ -236,31 +236,39 @@ exports.removeFromTeam = async (req, res) => {
         .json({ message: "Team not found for the specified game week" });
 
     const players = await Player.find({ _id: { $in: playerIds } });
+
+    // Create a set of player IDs for faster lookups
+    const playerIdSet = new Set(playerIds);
     const errors = []; // To hold any errors during the process
 
-    // Loop through player IDs to remove them
-    for (const playerId of playerIds) {
-      const playerIndex = team.players.indexOf(playerId);
+    // Filter out players that are not in the team or don't exist
+    const validPlayers = players.filter((player) => {
+      if (!playerIdSet.has(player._id.toString())) {
+        errors.push(`Player ID ${player._id} does not exist`);
+        return false;
+      }
+      const playerIndex = team.players.indexOf(player._id);
       if (playerIndex === -1) {
-        errors.push(`Player ID ${playerId} not found in the team`);
-        continue; // Skip to the next player
+        errors.push(`Player ID ${player._id} not found in the team`);
+        return false;
       }
+      return true;
+    });
 
-      const player = await Player.findById(playerId); // Fetch the player details
-      if (!player) {
-        errors.push(`Player ID ${playerId} does not exist`);
-        continue; // Skip to the next player
+    // Loop through valid players to remove them
+    for (const player of validPlayers) {
+      const playerIndex = team.players.indexOf(player._id);
+      if (playerIndex !== -1) {
+        team.players.splice(playerIndex, 1);
+        user.money += player.price;
+        player.transfersOut++; // Increment transfers out count for the player
       }
-
-      // Remove the player from the team and refund the price to the user's money
-      team.players.splice(playerIndex, 1);
-      user.money += player.price;
-      player.transfersOut++; // Increment transfers out count for the player
     }
 
+    // Save the changes
     await team.save(); // Save the updated team
     await user.save(); // Save the updated user
-    await Promise.all(players.map((player) => player.save()));
+    await Promise.all(validPlayers.map((player) => player.save()));
 
     res.status(200).json({
       message: "Players removed successfully",
