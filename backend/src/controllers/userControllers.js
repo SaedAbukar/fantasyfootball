@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const Player = require("../models/FutsalPlayer");
+const Team = require("../models/Team");
 const FootballPlayer = require("../models/FootballPlayer");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
@@ -19,14 +20,14 @@ exports.getUserById = async (req, res) => {
 
   try {
     const user = await User.findById(userId)
-      .populate("team")
+      .populate("teams")
       .select("-password");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const { _id, firstname, lastname, email, money, team, role } = user;
+    const { _id, firstname, lastname, email, money, teams, role } = user;
 
     res.status(200).json({
       id: _id,
@@ -34,7 +35,7 @@ exports.getUserById = async (req, res) => {
       lastname,
       email,
       money,
-      team,
+      teams,
       role,
     });
   } catch (err) {
@@ -119,7 +120,8 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
-// POST/ add player to team
+// PATCH/ add player to team
+// PATCH/ Add player to team or copy previous week's team if it doesn't exist
 exports.addToTeam = async (req, res) => {
   // Ensure req.user exists after authMiddleware
   if (!req.user || !req.user.id) {
@@ -127,8 +129,9 @@ exports.addToTeam = async (req, res) => {
       .status(401)
       .json({ message: "Invalid user or user not authenticated" });
   }
+
   const userId = req.user.id; // Extracted from JWT
-  const { playerId } = req.body;
+  const { playerId, gameWeekId } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     return res.status(400).json({ message: "Invalid user ID" });
@@ -137,6 +140,7 @@ exports.addToTeam = async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(playerId)) {
     return res.status(400).json({ message: "Invalid player ID" });
   }
+
   try {
     const user = await User.findById(userId);
     const player = await Player.findById(playerId);
@@ -144,13 +148,38 @@ exports.addToTeam = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
     if (!player) return res.status(404).json({ message: "Player not found" });
 
+    // Find the team for the current game week
+    let team = await Team.findOne({ owner: userId, gameWeek: gameWeekId });
+
+    if (!team) {
+      // If no team exists for the current game week, try to find the previous week's team
+      const previousTeam = await Team.findOne({ owner: userId }).sort({
+        gameWeek: -1,
+      });
+
+      if (previousTeam) {
+        // Create a new team by copying the previous week's setup
+        team = await Team.create({
+          owner: userId,
+          gameWeek: gameWeekId,
+          players: [...previousTeam.players],
+          captain: previousTeam.captain,
+          viceCaptain: previousTeam.viceCaptain,
+        });
+      }
+
+      // Add the new team to the user's teams and save
+      user.teams.push(team._id);
+      await user.save();
+    }
+
     // Check if the player is already in the team
-    if (user.team.includes(playerId)) {
+    if (team.players.includes(playerId)) {
       return res.status(400).json({ message: "Player already in the team" });
     }
 
     // Check if the team is already full
-    if (user.team.length >= 15) {
+    if (team.players.length >= 15) {
       return res
         .status(400)
         .json({ message: "Team is already full. Cannot add more players." });
@@ -165,7 +194,7 @@ exports.addToTeam = async (req, res) => {
 
     // Check the number of players from the same team
     const sameTeamCount = await Player.countDocuments({
-      _id: { $in: user.team },
+      _id: { $in: team.players },
       team: player.team, // Assuming the Player model has a 'team' field
     });
 
@@ -176,16 +205,17 @@ exports.addToTeam = async (req, res) => {
     }
 
     // Add player to the team and deduct the price from the user's money
-    user.team.push(playerId);
+    team.players.push(playerId);
     user.money -= player.price;
     player.transfersIn++;
 
+    await team.save();
     await user.save();
     await player.save();
 
     res.status(200).json({
       message: "Player added successfully",
-      team: user.team,
+      team: team.players,
       money: user.money,
     });
   } catch (err) {
@@ -201,8 +231,9 @@ exports.removeFromTeam = async (req, res) => {
       .status(401)
       .json({ message: "Invalid user or user not authenticated" });
   }
+
   const userId = req.user.id; // Extracted from JWT
-  const { playerId } = req.body;
+  const { playerId, gameWeekId } = req.body; // Assuming gameWeekId is passed in the body
 
   if (
     !mongoose.Types.ObjectId.isValid(userId) ||
@@ -214,27 +245,34 @@ exports.removeFromTeam = async (req, res) => {
   try {
     const user = await User.findById(userId);
     const player = await Player.findById(playerId);
+    // Find the user's team for the specific game week
+    const team = await Team.findOne({ owner: userId, gameWeek: gameWeekId });
 
     if (!user) return res.status(404).json({ message: "User not found" });
     if (!player) return res.status(404).json({ message: "Player not found" });
+    if (!team)
+      return res
+        .status(404)
+        .json({ message: "Team not found for the specified game week" });
 
     // Check if the player is in the user's team
-    const playerIndex = user.team.indexOf(playerId);
+    const playerIndex = team.players.indexOf(playerId);
     if (playerIndex === -1) {
       return res.status(400).json({ message: "Player not found in the team" });
     }
 
     // Remove the player from the team and refund the price to the user's money
-    user.team.splice(playerIndex, 1);
+    team.players.splice(playerIndex, 1);
     user.money += player.price;
-    player.transfersOut++;
+    player.transfersOut++; // Increment transfers out count for the player
 
-    await user.save();
-    await player.save();
+    await team.save(); // Save the updated team
+    await user.save(); // Save the updated user
+    await player.save(); // Save the updated player
 
     res.status(200).json({
       message: "Player removed successfully",
-      team: user.team,
+      team: team.players, // Return updated players list
       money: user.money,
     });
   } catch (err) {
@@ -258,35 +296,63 @@ exports.getUserWithTeam = async (req, res) => {
 
   try {
     // Fetch the total number of favorite players
-    const user = await User.findById(userId).populate("team");
+    const user = await User.findById(userId).populate("teams");
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    res.status(200).json(user.team);
+    res.status(200).json(user.teams);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
 exports.registerUser = async (req, res) => {
-  const { firstname, lastname, email, password } = req.body;
+  const { firstname, lastname, email, password, teamName, gameWeekId } =
+    req.body;
+
+  // Check for required fields
+  if (
+    !firstname ||
+    !lastname ||
+    !email ||
+    !password ||
+    !teamName ||
+    !gameWeekId
+  ) {
+    return res.status(400).json({ message: "All fields must be filled" });
+  }
 
   try {
-    const newUser = await User.signup(
-      firstname,
-      lastname,
-      email,
-      password,
-      [],
-      []
-    );
+    // Register the new user
+    const newUser = await User.signup(firstname, lastname, email, password);
+
+    // Create the team associated with the user
+    const team = await Team.create({
+      name: teamName,
+      owner: newUser._id,
+      gameWeek: gameWeekId,
+      players: [], // Start with an empty player list
+      captain: null,
+      viceCaptain: null,
+    });
+
+    // Link the new team to the user
+    newUser.teams.push(team._id); // Ensure the team ID is stored in the user's teams array
+    await newUser.save(); // Save the user to reflect the added team
+
+    // Create a JWT token for the new user
     const token = jwt.sign(
-      { id: newUser._id, firstname: newUser.firstname },
+      {
+        id: newUser._id,
+        firstname: newUser.firstname,
+        team: teamName,
+      },
       process.env.JWT_SECRET,
       { expiresIn: "30m" }
     );
 
-    res.status(201).json({ message: "User created successfully!", token }); // Sending the Token to the client
+    // Send response with success message and token
+    res.status(201).json({ message: "User created successfully!", token });
     console.log("New user registered:", newUser.firstname);
   } catch (error) {
     console.error("Error in registerUser:", error.message); // Log error message
