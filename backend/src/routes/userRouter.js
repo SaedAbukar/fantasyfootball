@@ -9,6 +9,7 @@ router.post("/login", userController.loginUser); // Login user
 router.get("/allusers", userController.getAllUsers); // Get current user's profile (no :id needed)
 
 // Protected user routes
+router.get("/search", authMiddleware, userController.findUsers);
 router.get("/profile", authMiddleware, userController.getUserById); // Get current user's profile (no :id needed)
 router.patch("/profile", authMiddleware, userController.updateUser); // Update current user's profile (no :id needed)
 router.delete("/profile", authMiddleware, userController.deleteUser); // Delete current user's account (no :id needed)

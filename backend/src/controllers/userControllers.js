@@ -18,6 +18,39 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+// GET/ users by query
+exports.findUsers = async (req, res) => {
+  if (!req.user || !req.user.id) {
+    return res
+      .status(401)
+      .json({ message: "Invalid user or user not authenticated" });
+  }
+
+  const { firstname, lastname } = req.query;
+
+  const query = {};
+
+  if (firstname) {
+    query.firstname = { $regex: new RegExp(firstname, "i") };
+  }
+
+  if (lastname) {
+    query.lastname = { $regex: new RegExp(lastname, "i") };
+  }
+
+  try {
+    const users = await User.find(query)
+      .sort({ createdAt: -1 })
+      .select("-password"); // Populate team with player data
+    res.json({
+      message: `Found ${users.length} user(s)`,
+      users: users,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // GET/ user by token id
 exports.getUserById = async (req, res) => {
   if (!req.user || !req.user.id) {
@@ -139,6 +172,7 @@ exports.deleteUser = async (req, res) => {
 };
 
 // PATCH/ Add player to team or copy previous week's team if it doesn't exist
+// PATCH/ Add player to team
 exports.addToTeam = async (req, res) => {
   if (!req.user || !req.user.id) {
     return res
@@ -168,72 +202,82 @@ exports.addToTeam = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const team = await Team.findOne({
-      owner: userId,
-      gameWeek: currentGameWeek.gameWeekId,
-    });
+    const team = await Team.findOne({ owner: userId, gameWeek: 1 });
     if (!team) return res.status(404).json({ message: "Team not found" });
 
     const players = await Player.find({ _id: { $in: playerIds } });
-    const playerMap = new Map(
-      players.map((player) => [player._id.toString(), player])
-    );
-
     const errors = [];
     const playersToAdd = [];
 
+    // Loop through each playerId to process
     for (const playerId of playerIds) {
-      const player = playerMap.get(playerId);
+      const player = players.find((p) => p._id.toString() === playerId);
 
+      // Validate the player
       if (!player) {
         errors.push(`Player ID ${playerId} does not exist.`);
-        continue;
+        continue; // Skip to the next player
       }
 
+      // Check if the player is already in the team
       if (team.players.includes(player._id)) {
-        errors.push(`Player ${player.name} already in the team`);
-        continue;
+        errors.push(`Player ${player.name} is already in the team.`);
+        continue; // Skip to the next player
       }
 
+      // Check if the team is already full
       if (team.players.length >= 15) {
         errors.push(`Team is already full. Cannot add ${player.name}.`);
-        continue;
+        continue; // Skip to the next player
       }
 
+      // Check if user has enough money
       if (user.money < player.price) {
         errors.push(`Insufficient funds to add ${player.name}.`);
-        continue;
+        continue; // Skip to the next player
       }
 
-      playersToAdd.push(player._id);
-      user.money -= player.price;
-      player.transfersIn++;
+      // If all checks pass, add player
+      playersToAdd.push(player); // Store the player object
     }
 
-    team.players.push(...playersToAdd);
+    // If there are errors, return them without modifying the team or user balance
+    if (errors.length > 0) {
+      return res.status(400).json({ message: "Errors occurred", errors });
+    }
+
+    // Deduct money for players being added
+    for (const player of playersToAdd) {
+      console.log("money before", user.money);
+      user.money -= player.price; // Deduct the player's price
+      console.log("player price", player.price);
+      console.log("money after", user.money);
+      team.players.push(player._id); // Add player to team
+      player.transfersIn++; // Increment transfersIn count for the player
+    }
 
     // Save changes to user and team
     await Promise.all([
-      team.save(),
-      user.save(),
-      ...playersToAdd.map((playerId) =>
-        Player.findByIdAndUpdate(playerId, { $inc: { transfersIn: 1 } })
+      user.save(), // Save updated user with new money value
+      team.save(), // Save updated team with new players
+      ...playersToAdd.map((player) =>
+        Player.findByIdAndUpdate(player._id, { $inc: { transfersIn: 1 } })
       ),
     ]);
 
     res.status(200).json({
       message: "Players added successfully",
-      errors: errors.length > 0 ? errors : null,
       team: team.players,
       money: user.money,
       deadline: currentGameWeek.endDate,
     });
   } catch (err) {
+    console.error(err); // Log any unexpected errors for debugging
     res.status(500).json({ message: err.message });
   }
 };
 
-// DELETE/ delete team from user
+// DELETE/ delete team from user// DELETE/ remove player from team
 exports.removeFromTeam = async (req, res) => {
   if (!req.user || !req.user.id) {
     return res
@@ -270,10 +314,7 @@ exports.removeFromTeam = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const team = await Team.findOne({
-      owner: userId,
-      gameWeek: currentGameWeek.gameWeekId,
-    });
+    const team = await Team.findOne({ owner: userId, gameWeek: 1 });
     if (!team) return res.status(404).json({ message: "Team not found" });
 
     const players = await Player.find({ _id: { $in: playerIds } });
@@ -287,42 +328,61 @@ exports.removeFromTeam = async (req, res) => {
     for (const playerId of playerIds) {
       const player = playerMap.get(playerId);
 
+      // Check if the player exists
       if (!player) {
         errors.push(`Player ID ${playerId} does not exist.`);
-        continue;
+        continue; // Skip to the next player
       }
 
+      // Check if the player is in the team
       if (!team.players.includes(player._id)) {
-        errors.push(`Player ID ${playerId} not found in the team`);
-        continue;
+        errors.push(`Player ${player.name} not found in the team.`);
+        continue; // Skip to the next player
       }
 
-      playersToRemove.push(player._id);
-      user.money += player.price;
-      player.transfersOut++;
+      // If all checks pass, mark player for removal
+      playersToRemove.push(player); // Store the player object for further processing
     }
 
-    // Remove players from the team
+    // If there are any errors, return them without modifying the team
+    if (errors.length > 0) {
+      return res.status(400).json({ message: "Errors occurred", errors });
+    }
+
+    // Update user's money and player's transfer count
+    for (const player of playersToRemove) {
+      console.log("money before", user.money);
+      user.money += player.price; // Add player's price back to user's money
+      console.log("player price", player.price);
+      console.log("money after", user.money);
+      player.transfersOut++; // Increment transfersOut count for the player
+    }
+
+    // Remove the players from the team
     team.players = team.players.filter(
-      (playerId) => !playersToRemove.includes(playerId)
+      (playerId) =>
+        !playersToRemove.some(
+          (player) => player._id.toString() === playerId.toString()
+        )
     );
 
+    // Save changes to the user, team, and players
     await Promise.all([
       team.save(),
       user.save(),
-      ...playersToRemove.map((playerId) =>
-        Player.findByIdAndUpdate(playerId, { $inc: { transfersOut: 1 } })
+      ...playersToRemove.map((player) =>
+        Player.findByIdAndUpdate(player._id, { $inc: { transfersOut: 1 } })
       ),
     ]);
 
     res.status(200).json({
       message: "Players removed successfully",
-      errors: errors.length > 0 ? errors : null,
       team: team.players,
       money: user.money,
       deadline: currentGameWeek.endDate,
     });
   } catch (err) {
+    console.error(err); // Log any unexpected errors for debugging
     res.status(500).json({ message: err.message });
   }
 };
