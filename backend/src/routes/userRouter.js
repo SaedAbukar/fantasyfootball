@@ -14,11 +14,7 @@ router.get("/profile", authMiddleware, userController.getUserById); // Get curre
 router.patch("/profile", authMiddleware, userController.updateUser); // Update current user's profile (no :id needed)
 router.delete("/profile", authMiddleware, userController.deleteUser); // Delete current user's account (no :id needed)
 
-router.patch("/player", authMiddleware, userController.addToTeam); // Add player to current user's player
-router.delete("/player", authMiddleware, userController.removeFromTeam); // Remove player from current user's player
-
 // Fetch all saved players (player) for the authenticated user
 router.get("/player/myteam", authMiddleware, userController.getUserWithTeam);
-router.get("/player/teams", authMiddleware, userController.getPreviousTeam);
 
 module.exports = router;
