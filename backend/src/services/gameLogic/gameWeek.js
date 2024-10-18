@@ -121,6 +121,14 @@ async function updateGameWeekStatus() {
   }
 }
 
+// Function to get the All game weeks
+async function getAllGameWeeks() {
+  // Fetch all game weeks from the database
+  const allGameWeek = await GameWeek.find({});
+
+  return allGameWeek; // This will return All game weeks
+}
+
 // Function to get the current active game week
 async function getCurrentGameWeek() {
   const currentDate = new Date();
@@ -138,4 +146,4 @@ async function getCurrentGameWeek() {
 // seedGameWeeks(); // remember to run this after fixture data has been scraped and saved
 // updateGameWeekStatus(); // run this function after every gameweek
 
-module.exports = getCurrentGameWeek;
+module.exports = { getAllGameWeeks, getCurrentGameWeek };

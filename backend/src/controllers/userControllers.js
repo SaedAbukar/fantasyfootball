@@ -2,7 +2,7 @@ const User = require("../models/User");
 const Player = require("../models/FutsalPlayer");
 const Team = require("../models/Team");
 const GameWeek = require("../models/GameWeek");
-const getCurrentGameWeek = require("../services/gameLogic/gameWeek");
+const { getCurrentGameWeek } = require("../services/gameLogic/gameWeek");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 
@@ -204,30 +204,22 @@ exports.getUserWithTeam = async (req, res) => {
 };
 
 exports.registerUser = async (req, res) => {
-  const { firstname, lastname, email, password, teamName, gameWeekId } =
-    req.body;
+  const { firstname, lastname, email, password, teamName } = req.body;
 
   // Check for required fields
-  if (
-    !firstname ||
-    !lastname ||
-    !email ||
-    !password ||
-    !teamName ||
-    !gameWeekId
-  ) {
+  if (!firstname || !lastname || !email || !password || !teamName) {
     return res.status(400).json({ message: "All fields must be filled" });
   }
 
   try {
     // Register the new user
     const newUser = await User.signup(firstname, lastname, email, password);
-
+    const gameWeek = await getCurrentGameWeek();
     // Create the team associated with the user
     const team = await Team.create({
       name: teamName,
       owner: newUser._id,
-      gameWeek: gameWeekId,
+      gameWeek: gameWeek,
       players: [], // Start with an empty player list
       captain: null,
       viceCaptain: null,
@@ -245,7 +237,7 @@ exports.registerUser = async (req, res) => {
         team: teamName,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "30m" }
+      { expiresIn: "3d" }
     );
 
     // Send response with success message and token
@@ -261,7 +253,6 @@ exports.loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const currentGameWeek = await getCurrentGameWeek();
     const loggedInUser = await User.login(email, password);
     const token = jwt.sign(
       {
@@ -270,7 +261,7 @@ exports.loginUser = async (req, res) => {
         role: loggedInUser.role,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "30m" }
+      { expiresIn: "3d" }
     );
 
     res.status(200).json({
@@ -279,8 +270,6 @@ exports.loginUser = async (req, res) => {
       firstname: loggedInUser.firstname,
       id: loggedInUser._id,
       role: loggedInUser.role,
-      start: currentGameWeek.startDate,
-      deadline: currentGameWeek.endDate,
     });
   } catch (error) {
     console.error("Error in loginUser:", error.message); // Log error message

@@ -9,6 +9,7 @@ const cors = require("cors");
 const adminRoutes = require("./src/routes/adminRouter");
 const userRoutes = require("./src/routes/userRouter");
 const teamRoutes = require("./src/routes/teamRouter");
+const gameWeekRoutes = require("./src/routes/gameWeekRouter");
 const playerRoutes = require("./src/routes/footballRouter");
 const futsalRoutes = require("./src/routes/futsalRouter");
 const {
@@ -51,6 +52,7 @@ connectDB();
 app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/teams", teamRoutes);
+app.use("/api/gameweek", gameWeekRoutes);
 app.use("/api/football", playerRoutes);
 app.use("/api/futsal", futsalRoutes);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));

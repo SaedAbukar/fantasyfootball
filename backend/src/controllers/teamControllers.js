@@ -2,7 +2,7 @@ const User = require("../models/User");
 const Player = require("../models/FutsalPlayer");
 const Team = require("../models/Team");
 const GameWeek = require("../models/GameWeek");
-const getCurrentGameWeek = require("../services/gameLogic/gameWeek");
+const { getCurrentGameWeek } = require("../services/gameLogic/gameWeek");
 const mongoose = require("mongoose");
 
 // GET/ All Teams
