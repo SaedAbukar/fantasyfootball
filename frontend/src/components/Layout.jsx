@@ -1,14 +1,15 @@
+// src/components/Layout.jsx
 import React from "react";
 import { Outlet } from "react-router-dom";
-import Navbar from "./NavBar";
-import "../styles.css"; // Import the CSS
+import Navbar from "./Navbar"; // Correct path for Navbar
+import "../styles.css"; // Correct path for CSS styles
 
 const Layout = () => {
   return (
     <>
       <Navbar />
       <div className="container">
-        <Outlet /> {/* Render the child route here */}
+        <Outlet /> {/* This will render the matched child route */}
       </div>
     </>
   );
