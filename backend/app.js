@@ -28,11 +28,7 @@ const path = require("path");
 
 const app = express();
 
-app.use(
-  cors({
-    origin: "https://jobscout-frontend.onrender.com", // Allowing the Frontend to interact with backend
-  })
-);
+app.use(cors());
 
 app.use(helmet()); // Adding Helmet for security
 

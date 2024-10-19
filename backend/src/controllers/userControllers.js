@@ -219,7 +219,7 @@ exports.registerUser = async (req, res) => {
     const team = await Team.create({
       name: teamName,
       owner: newUser._id,
-      gameWeek: gameWeek,
+      gameWeek: gameWeek.gameWeekId,
       players: [], // Start with an empty player list
       captain: null,
       viceCaptain: null,
